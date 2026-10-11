@@ -9,24 +9,16 @@ if (!defined('BASE_URL')) {
     $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
     
     $scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '');
-    if (str_contains($scriptName, '/edumanage/soan_giao_an/public')) {
+    if (str_contains($scriptName, '/edumanage/')) {
         $base = '/edumanage/soan_giao_an/public';
-    } elseif (str_contains($scriptName, '/edumanage/soan_giao_an')) {
-        $base = '/edumanage/soan_giao_an/public';
-    } elseif (str_contains($scriptName, '/soan_giao_an/public')) {
-        $base = '/soan_giao_an/public';
-    } elseif (str_contains($scriptName, '/soan_giao_an')) {
-        $base = '/soan_giao_an/public';
+        $rootApp = '/edumanage';
     } else {
-        $base = '/edumanage/soan_giao_an/public';
+        // Chạy tại Root domain (Render / Cloud: https://edumanage-ankc.onrender.com)
+        $base = '/soan_giao_an/public';
+        $rootApp = '';
     }
     define('BASE_URL', $protocol . $host . $base);
-}
-
-if (!defined('EDUMANAGE_URL')) {
-    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? "https://" : "http://";
-    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-    define('EDUMANAGE_URL', $protocol . $host . '/edumanage');
+    define('EDUMANAGE_URL', $protocol . $host . $rootApp);
 }
 
 define(
