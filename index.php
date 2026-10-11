@@ -99,21 +99,21 @@ if($role === 'teacher'){
   <!-- MAIN WRAPPER -->
   <main class="md:ml-64 min-h-screen flex flex-col">
     <!-- Top Header -->
-    <header class="h-20 bg-white border-b border-slate-200 sticky top-0 z-20 flex items-center justify-between px-4 md:px-8">
-      <div class="flex items-center gap-3">
-        <button class="md:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-xl" onclick="toggleSide()">
+    <header class="min-h-[4.5rem] py-3 bg-white border-b border-slate-200 sticky top-0 z-20 flex items-center justify-between px-3 md:px-8 gap-2">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <button class="md:hidden p-2 -ml-1 text-slate-600 hover:bg-slate-100 rounded-xl shrink-0" onclick="toggleSide()" aria-label="Menu">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
         </button>
-        <div>
-          <h1 class="font-extrabold text-xl text-slate-800"><?php echo $readonly ? 'Hồ sơ học tập' : 'Quản lý học tập'; ?></h1>
-          <p class="text-xs text-slate-400"><?php echo $readonly ? 'Theo dõi tiến trình buổi học, điểm số và học phí' : 'Quản lý học sinh, nhật ký buổi học, bảng điểm và học phí'; ?></p>
+        <div class="min-w-0">
+          <h1 class="font-extrabold text-base sm:text-xl text-slate-800 truncate"><?php echo $readonly ? 'Hồ sơ học tập' : 'Quản lý học tập'; ?></h1>
+          <p class="text-[11px] sm:text-xs text-slate-400 truncate hidden xs:block sm:block"><?php echo $readonly ? 'Theo dõi tiến trình buổi học, điểm số và học phí' : 'Quản lý học sinh, nhật ký buổi học, bảng điểm và học phí'; ?></p>
         </div>
       </div>
 
       <!-- Month Selector -->
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-1.5 shrink-0">
         <label for="month" class="hidden sm:inline text-xs font-bold uppercase tracking-wider text-slate-400">Tháng:</label>
-        <input id="month" type="month" class="border border-slate-200 bg-white rounded-xl px-3.5 py-2 text-sm font-semibold text-slate-700 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all cursor-pointer shadow-sm" onchange="loadData()">
+        <input id="month" type="month" class="border border-slate-200 bg-white rounded-xl px-2.5 py-1.5 sm:px-3.5 sm:py-2 text-xs sm:text-sm font-semibold text-slate-700 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all cursor-pointer shadow-sm max-w-[145px] sm:max-w-none" onchange="loadData()">
       </div>
     </header>
 
@@ -139,32 +139,32 @@ if($role === 'teacher'){
         </div>
 
         <!-- CẢ 2 MÃ ĐƯỢC ĐƯA RA NGOÀI CÙNG NHAU: MÃ GIÁO VIÊN & MÃ LIÊN KẾT HỌC SINH -->
-        <div class="flex flex-wrap items-center gap-3">
+        <div class="w-full xl:w-auto grid grid-cols-1 sm:grid-cols-2 gap-2.5">
           <!-- 1. MÃ GIÁO VIÊN -->
-          <div class="teacher-code-badge">
-            <div class="text-left">
+          <div class="teacher-code-badge justify-between sm:justify-start">
+            <div class="text-left min-w-0 pr-1">
               <div class="flex items-center gap-1.5 mb-0.5">
                 <span class="block text-[10px] font-bold tracking-wider text-slate-400 uppercase">Mã giáo viên</span>
                 <span class="text-[9px] bg-slate-100 text-slate-500 font-bold px-1.5 py-0.5 rounded">Tài khoản</span>
               </div>
               <span id="teacherCodeVal" class="teacher-code-text"><?=e($teacherCode)?></span>
             </div>
-            <button type="button" onclick="copyTeacherCode()" class="btn-copy-code" title="Sao chép mã giáo viên">
+            <button type="button" onclick="copyTeacherCode()" class="btn-copy-code shrink-0" title="Sao chép mã giáo viên">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
               <span id="copyBtnText">Sao chép</span>
             </button>
           </div>
 
           <!-- 2. MÃ LIÊN KẾT HỌC SINH (ĐƯA RA NGOÀI CÙNG VỚI MÃ GIÁO VIÊN) -->
-          <div class="teacher-code-badge bg-blue-50/80 border-blue-300" id="topStudentCodeContainer">
-            <div class="text-left">
+          <div class="teacher-code-badge bg-blue-50/80 border-blue-300 justify-between sm:justify-start" id="topStudentCodeContainer">
+            <div class="text-left min-w-0 pr-1">
               <div class="flex items-center gap-1.5 mb-0.5">
                 <span class="block text-[10px] font-bold tracking-wider text-blue-700 uppercase">Mã liên kết học sinh</span>
-                <span id="topStudentTag" class="text-[9px] bg-blue-200 text-blue-800 font-bold px-1.5 py-0.5 rounded truncate max-w-[110px]">Đang chọn</span>
+                <span id="topStudentTag" class="text-[9px] bg-blue-200 text-blue-800 font-bold px-1.5 py-0.5 rounded truncate max-w-[100px]">Đang chọn</span>
               </div>
               <span id="topStudentCodeVal" class="teacher-code-text text-blue-900 font-mono">—</span>
             </div>
-            <button type="button" onclick="copyTopStudentCode()" id="btnCopyTopStudent" class="btn-copy-code bg-indigo-600 hover:bg-indigo-700" title="Sao chép mã liên kết học sinh">
+            <button type="button" onclick="copyTopStudentCode()" id="btnCopyTopStudent" class="btn-copy-code bg-indigo-600 hover:bg-indigo-700 shrink-0" title="Sao chép mã liên kết học sinh">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
               <span id="copyTopStudentText">Sao chép</span>
             </button>

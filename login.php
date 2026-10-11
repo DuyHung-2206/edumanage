@@ -15,8 +15,8 @@ if(!empty($_SESSION['user_id'])){
   <script src="https://unpkg.com/lucide@latest"></script>
   <link rel="stylesheet" href="assets/css/style.css">
 </head>
-<body class="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-  <div class="w-full max-w-md bg-white rounded-3xl border border-blue-100 shadow-xl shadow-blue-500/5 p-8 relative overflow-hidden">
+<body class="min-h-screen bg-slate-50 flex items-center justify-center p-3 sm:p-4">
+  <div class="w-full max-w-md bg-white rounded-3xl border border-blue-100 shadow-xl shadow-blue-500/5 p-5 sm:p-8 relative overflow-hidden">
     <!-- Blue Accent Bar -->
     <div class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-600 to-indigo-500"></div>
 
