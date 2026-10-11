@@ -457,11 +457,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const formData = new FormData(form);
-            const response = await fetch(form.action, {
+            const targetUrl = form.action || window.location.href.replace(/\/create.*$/, '/generate');
+            const response = await fetch(targetUrl, {
                 method: 'POST',
                 body: formData,
-                headers: { 'Accept': 'application/json' }
+                headers: { 'Accept': 'application/json' },
+                credentials: 'same-origin'
             });
+
+            if (!response.ok) {
+                const errStatus = response.status;
+                const errText = await response.text();
+                throw new Error(`Máy chủ phản hồi mã lỗi ${errStatus}: ${errText.substring(0, 150)}`);
+            }
 
             let rawText = await response.text();
             rawText = rawText.replace(/^\uFEFF/, '').trim();

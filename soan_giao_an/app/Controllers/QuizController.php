@@ -91,7 +91,12 @@ class QuizController
     private function requireLogin()
     {
         if (!$this->getCurrentUser()) {
-            header('Location: ../../login.php');
+            if (!empty($_SERVER['HTTP_ACCEPT']) && str_contains($_SERVER['HTTP_ACCEPT'], 'application/json')) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'message' => 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.']);
+                exit;
+            }
+            header('Location: ' . EDUMANAGE_URL . '/login.php');
             exit;
         }
     }
@@ -101,7 +106,12 @@ class QuizController
         $user = $this->getCurrentUser();
 
         if (!$user) {
-            header('Location: ../../login.php');
+            if (!empty($_SERVER['HTTP_ACCEPT']) && str_contains($_SERVER['HTTP_ACCEPT'], 'application/json')) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'message' => 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.']);
+                exit;
+            }
+            header('Location: ' . EDUMANAGE_URL . '/login.php');
             exit;
         }
 
