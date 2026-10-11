@@ -1,0 +1,113 @@
+CREATE DATABASE IF NOT EXISTS edumanage CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE edumanage;
+
+CREATE TABLE IF NOT EXISTS users (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  email VARCHAR(190) NOT NULL UNIQUE,
+  password_hash VARCHAR(255) NOT NULL,
+  role ENUM('teacher','parent','student') NOT NULL,
+  teacher_code VARCHAR(20) NULL UNIQUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX(role)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS students (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  teacher_id INT UNSIGNED NOT NULL,
+  name VARCHAR(150) NOT NULL,
+  class_name VARCHAR(100) DEFAULT '',
+  parent_phone VARCHAR(30) DEFAULT '',
+  note TEXT,
+  connection_code VARCHAR(32) NOT NULL UNIQUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (teacher_id) REFERENCES users(id) ON DELETE CASCADE,
+  INDEX(teacher_id)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS student_parents (
+  student_id INT UNSIGNED NOT NULL,
+  parent_id INT UNSIGNED NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY(student_id, parent_id),
+  FOREIGN KEY(student_id) REFERENCES students(id) ON DELETE CASCADE,
+  FOREIGN KEY(parent_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS student_accounts (
+  student_id INT UNSIGNED PRIMARY KEY,
+  user_id INT UNSIGNED NOT NULL UNIQUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(student_id) REFERENCES students(id) ON DELETE CASCADE,
+  FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS lessons (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  student_id INT UNSIGNED NOT NULL,
+  lesson_date DATE NOT NULL,
+  start_time TIME NULL,
+  end_time TIME NULL,
+  duration DECIMAL(4,1) NOT NULL DEFAULT 0,
+  price DECIMAL(12,0) NOT NULL DEFAULT 0,
+  subject VARCHAR(100) NOT NULL DEFAULT 'Toán',
+  homework_percent TINYINT UNSIGNED NOT NULL DEFAULT 100,
+  attitude ENUM('Tốt','Mất tập trung','Lười học','Nói chuyện riêng') NOT NULL DEFAULT 'Tốt',
+  comment TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(student_id) REFERENCES students(id) ON DELETE CASCADE,
+  INDEX(student_id, lesson_date)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS grades (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  student_id INT UNSIGNED NOT NULL,
+  test_date DATE NOT NULL,
+  test_name VARCHAR(200) NOT NULL,
+  score DECIMAL(3,1) NOT NULL,
+  mistakes TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(student_id) REFERENCES students(id) ON DELETE CASCADE,
+  INDEX(student_id, test_date)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS feedbacks (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  student_id INT UNSIGNED NOT NULL,
+  month_key CHAR(7) NOT NULL,
+  overview TEXT,
+  algebra TEXT,
+  geometry TEXT,
+  next_algebra TEXT,
+  next_geometry TEXT,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_feedback(student_id, month_key),
+  FOREIGN KEY(student_id) REFERENCES students(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS payment_settings (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  teacher_id INT UNSIGNED NOT NULL UNIQUE,
+  bank_name VARCHAR(100) DEFAULT '',
+  account_number VARCHAR(100) DEFAULT '',
+  account_owner VARCHAR(150) DEFAULT '',
+  qr_image VARCHAR(255) DEFAULT NULL,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY(teacher_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS quizzes (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  teacher_id INT UNSIGNED NOT NULL,
+  grade INT NOT NULL DEFAULT 1,
+  subject VARCHAR(100) NOT NULL,
+  lesson_name VARCHAR(255) NOT NULL,
+  duration VARCHAR(20) NOT NULL DEFAULT '15p',
+  format VARCHAR(50) NOT NULL DEFAULT 'mixed',
+  content LONGTEXT NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (teacher_id) REFERENCES users(id) ON DELETE CASCADE,
+  INDEX(teacher_id),
+  INDEX(grade),
+  INDEX(subject)
+) ENGINE=InnoDB;

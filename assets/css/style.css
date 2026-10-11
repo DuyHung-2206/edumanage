@@ -1,0 +1,298 @@
+/* =========================================================
+   EduManage - Blue & White Modern Theme
+   ========================================================= */
+
+:root {
+  --primary-blue: #1e40af;       /* Blue 800 - Màu xanh đậm thương hiệu */
+  --accent-blue: #2563eb;        /* Blue 600 - Màu xanh dương tương tác */
+  --hover-blue: #1d4ed8;         /* Blue 700 */
+  --light-blue: #eff6ff;         /* Blue 50 - Nền xanh nhạt */
+  --soft-blue: #dbeafe;          /* Blue 100 */
+  --border-blue: #bfdbfe;        /* Blue 200 - Đường viền xanh */
+  --border-color: #e2e8f0;       /* Slate 200 */
+  --text-main: #0f172a;          /* Slate 900 */
+  --text-muted: #64748b;         /* Slate 500 */
+  --bg-page: #f8fafc;            /* Slate 50 */
+  --bg-card: #ffffff;
+  --success-color: #10b981;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--bg-page);
+  color: var(--text-main);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Sidebar & Navigation */
+.sidebar {
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  background-color: var(--bg-card);
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  color: #475569;
+  font-weight: 500;
+  font-size: 0.9rem;
+  transition: all 0.15s ease;
+}
+
+.nav:hover {
+  background-color: var(--light-blue);
+  color: var(--accent-blue);
+}
+
+.nav.active {
+  background-color: var(--light-blue);
+  color: var(--accent-blue);
+  font-weight: 600;
+  border-left: 3px solid var(--accent-blue);
+  border-radius: 0 0.75rem 0.75rem 0;
+}
+
+/* Tabs */
+.tab {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-align: center;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.tab:hover {
+  color: var(--accent-blue);
+}
+
+.tab.active {
+  background: var(--accent-blue);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+}
+
+/* Cards & Stats */
+.stat {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+  padding: 1.25rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.stat:hover {
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.06);
+  border-color: var(--border-blue);
+}
+
+.stat span {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat b {
+  display: block;
+  font-size: 1.6rem;
+  margin-top: 0.5rem;
+  font-weight: 800;
+  color: var(--primary-blue);
+}
+
+/* Forms & Inputs */
+.label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #334155;
+}
+
+.input {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  font-size: 0.95rem;
+  outline: none;
+  background-color: #ffffff;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.input:focus {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.roleBtn {
+  border: 1px solid #cbd5e1;
+  border-radius: 0.75rem;
+  padding: 0.75rem 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: #ffffff;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.roleBtn:hover {
+  border-color: var(--accent-blue);
+  color: var(--accent-blue);
+}
+
+.roleBtn.active {
+  background: var(--light-blue);
+  color: var(--accent-blue);
+  border-color: var(--border-blue);
+  box-shadow: 0 0 0 1px var(--accent-blue);
+}
+
+/* Teacher Header Card */
+.teacher-profile-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%);
+  border: 1px solid var(--border-blue);
+  border-radius: 1.25rem;
+  padding: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.05);
+}
+
+.teacher-code-badge {
+  background: #ffffff;
+  border: 1.5px dashed var(--accent-blue);
+  border-radius: 0.875rem;
+  padding: 0.65rem 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.08);
+}
+
+.teacher-code-text {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--primary-blue);
+  letter-spacing: 1px;
+}
+
+.btn-copy-code {
+  background: var(--accent-blue);
+  color: #ffffff;
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.4rem 0.85rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: all 0.2s ease;
+}
+
+.btn-copy-code:hover {
+  background: var(--hover-blue);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(37, 99, 235, 0.3);
+}
+
+.btn-copy-code:active {
+  transform: translateY(0);
+}
+
+/* Tables */
+table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+table th {
+  padding: 0.875rem 1rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #64748b;
+  background-color: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+table td {
+  padding: 1rem;
+  border-bottom: 1px solid #f1f5f9;
+  color: #1e293b;
+}
+
+tbody tr:hover td {
+  background-color: #f8fafc;
+}
+
+/* Toast Notifications */
+.edu-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: #0f172a;
+  color: #ffffff;
+  padding: 0.85rem 1.4rem;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(12px);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 9999;
+}
+
+.edu-toast.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+/* Modals */
+#modal.flex {
+  display: flex;
+}
+
+#modalBox {
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.2);
+}
+
+/* Mobile responsive */
+@media (max-width: 767px) {
+  .sidebar {
+    transform: translateX(-100%);
+  }
+  .sidebar.open {
+    transform: translateX(0);
+  }
+}

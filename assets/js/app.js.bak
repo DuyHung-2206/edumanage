@@ -1,0 +1,764 @@
+let students = [], selectedId = null, data = null;
+const $ = id => document.getElementById(id);
+$('month').value = new Date().toISOString().slice(0, 7);
+const teacher = USER_ROLE === 'teacher';
+
+// Danh sách các môn học theo Chương trình Giáo dục Tiểu học
+const PRIMARY_SUBJECTS = [
+  'Toán',
+  'Tiếng Việt',
+  'Tiếng Anh',
+  'Tự nhiên và Xã hội',
+  'Khoa học',
+  'Lịch sử và Địa lí',
+  'Tin học và Công nghệ',
+  'Đạo đức',
+  'Hoạt động trải nghiệm',
+  'Luyện chữ đẹp',
+  'Ôn tập tổng hợp',
+  'Môn khác'
+];
+
+async function api(url, options = {}) {
+  const r = await fetch(url, options);
+  let d = {};
+  try { d = await r.json(); } catch (e) {}
+  if (!r.ok || !d.success) throw Error(d.message || 'Có lỗi xảy ra');
+  return d;
+}
+
+async function loadStudents() {
+  try {
+    const d = teacher ? await api('api/students.php?action=list') : await api('api/linked.php');
+    students = d.students || [];
+    renderStudents();
+    if (selectedId && students.some(s => +s.id === +selectedId)) {
+      await loadData();
+    } else if (students[0]) {
+      selectedId = +students[0].id;
+      await loadData();
+    } else {
+      showEmpty();
+    }
+  } catch (e) {
+    alert(e.message);
+  }
+}
+
+function showEmpty() {
+  $('studentEmpty').classList.remove('hidden');
+  $('dashboard').classList.add('hidden');
+  if ($('topStudentCodeVal')) $('topStudentCodeVal').textContent = '—';
+  if ($('topStudentTag')) $('topStudentTag').textContent = 'Chưa chọn';
+  if ($('studentConnectionCodeVal')) $('studentConnectionCodeVal').textContent = '—';
+}
+
+function renderStudents() {
+  $('students').innerHTML = students.length
+    ? students.map(s => `
+      <button onclick="selectStudent(${s.id})" class="w-full text-left p-3.5 rounded-xl border transition-all ${+selectedId === +s.id ? 'border-blue-300 bg-blue-50/70 shadow-sm ring-1 ring-blue-300' : 'border-slate-100 hover:bg-slate-50'}">
+        <div class="flex justify-between items-start">
+          <b class="text-slate-800 text-sm font-bold">${esc(s.name)}</b>
+          <span class="text-[11px] font-semibold text-blue-600 bg-blue-100/60 px-2 py-0.5 rounded-md">${s.lesson_count ?? 0} buổi</span>
+        </div>
+        <div class="flex justify-between items-center mt-2">
+          <span class="text-xs text-slate-400">${esc(s.class_name || 'Chưa phân lớp')}</span>
+          <span class="text-[10px] font-mono font-bold text-blue-900 bg-white border border-blue-200 px-1.5 py-0.5 rounded shadow-2xs" title="Mã liên kết học sinh">
+            Mã: ${esc(s.connection_code)}
+          </span>
+        </div>
+      </button>
+    `).join('')
+    : '<p class="text-sm text-slate-400 text-center py-6">Chưa có hồ sơ học sinh nào.</p>';
+}
+
+async function selectStudent(id) {
+  selectedId = +id;
+  renderStudents();
+  await loadData();
+}
+
+async function loadData() {
+  if (!selectedId) return;
+  try {
+    data = await api(`api/data.php?student_id=${selectedId}&month=${$('month').value}`);
+    $('studentEmpty').classList.add('hidden');
+    $('dashboard').classList.remove('hidden');
+    renderAll();
+  } catch (e) {
+    alert(e.message);
+  }
+}
+
+function renderAll() {
+  const s = data.student, p = data.payment || {}, l = data.lessons || [], g = data.grades || [];
+  $('sname').textContent = s.name;
+  $('sclass').textContent = s.class_name || 'Chưa cập nhật lớp';
+  $('teacherName').textContent = 'Giáo viên hướng dẫn: ' + (s.teacher_name || '—');
+  $('avatar').textContent = s.name.split(' ').map(x => x[0]).slice(-2).join('').toUpperCase();
+  
+  // CẬP NHẬT MÃ LIÊN KẾT HỌC SINH ĐƯA RA NGOÀI CÙNG VỚI MÃ GIÁO VIÊN
+  if ($('topStudentCodeVal')) $('topStudentCodeVal').textContent = s.connection_code || 'Chưa có';
+  if ($('topStudentTag')) {
+    const shortName = s.name ? s.name.trim().split(' ').slice(-1)[0] : 'Đang chọn';
+    $('topStudentTag').textContent = shortName;
+    $('topStudentTag').title = s.name;
+  }
+  if ($('studentConnectionCodeVal')) $('studentConnectionCodeVal').textContent = s.connection_code || 'Chưa có';
+
+  $('statLessons').textContent = l.length;
+  $('statHours').textContent = l.reduce((a, x) => a + Number(x.duration), 0) + 'h';
+  $('statPrice').textContent = money(l.reduce((a, x) => a + Number(x.price), 0));
+  
+  let avg = g.length ? g.reduce((a, x) => a + Number(x.score), 0) / g.length : null;
+  $('statAvg').textContent = avg === null ? '—' : avg.toFixed(1);
+  $('bigAvg').textContent = avg === null ? '—' : avg.toFixed(1);
+  $('gradeCount').textContent = g.length;
+  
+  $('totalFee').textContent = money(l.reduce((a, x) => a + Number(x.price), 0));
+  $('bank').textContent = p.bank_name || 'Chưa thiết lập';
+  $('account').textContent = p.account_number || '—';
+  $('owner').textContent = p.account_owner || '—';
+  
+  if (p.qr_image) {
+    $('qr').src = p.qr_image;
+    $('qr').classList.remove('hidden');
+  } else {
+    $('qr').src = '';
+    $('qr').classList.add('hidden');
+  }
+
+  renderCalendar();
+  renderLessons();
+  renderGrades();
+  renderFeedback();
+}
+
+function renderCalendar() {
+  let c = $('calendar');
+  c.innerHTML = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map(x => `<div class="text-center text-xs font-bold text-slate-400 py-1">${x}</div>`).join('');
+  let [y, m] = $('month').value.split('-').map(Number);
+  let first = new Date(y, m - 1, 1);
+  let start = (first.getDay() + 6) % 7;
+  let days = new Date(y, m, 0).getDate();
+  let studied = data.lessons.map(x => Number(x.lesson_date.slice(8, 10)));
+
+  for (let i = 0; i < start; i++) c.innerHTML += '<div></div>';
+  for (let d = 1; d <= days; d++) {
+    c.innerHTML += `<div class="aspect-square rounded-xl grid place-items-center text-sm font-bold transition-all ${studied.includes(d) ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/20' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}">${d}</div>`;
+  }
+}
+
+function renderLessons() {
+  $('lessonRows').innerHTML = data.lessons.length
+    ? data.lessons.map((x, i) => `
+      <tr>
+        <td class="font-bold text-slate-400">#${i + 1}</td>
+        <td class="font-semibold text-slate-800">${fmtDate(x.lesson_date)}</td>
+        <td>${x.start_time?.slice(0, 5) || '—'} - ${x.end_time?.slice(0, 5) || '—'} <small class="text-slate-400 font-medium">(${x.duration}h)</small></td>
+        <td class="font-semibold text-blue-700">${money(x.price)}</td>
+        <td><span class="bg-blue-50 text-blue-700 border border-blue-100 px-2.5 py-1 rounded-lg text-xs font-bold">${esc(x.subject)}</span></td>
+        <td>${badgeHw(x.homework_percent)}</td>
+        <td>${badgeAtt(x.attitude)}</td>
+        <td class="max-w-xs whitespace-normal text-slate-600 text-xs">${esc(x.comment || '—')}</td>
+        ${teacher ? `
+          <td>
+            <div class="flex items-center gap-2">
+              <button class="text-blue-600 hover:underline font-semibold" onclick='editLesson(${JSON.stringify(x)})'>Sửa</button>
+              <button class="text-red-500 hover:underline font-semibold" onclick="deleteLesson(${x.id})">Xóa</button>
+            </div>
+          </td>
+        ` : ''}
+      </tr>
+    `).join('')
+    : `<tr><td colspan="${teacher ? 9 : 8}" class="text-center text-slate-400 py-12">Chưa có buổi học nào được ghi lại trong tháng này.</td></tr>`;
+}
+
+function renderGrades() {
+  $('gradeRows').innerHTML = data.grades.length
+    ? data.grades.map(x => `
+      <tr>
+        <td class="font-semibold text-slate-800">${fmtDate(x.test_date)}</td>
+        <td class="font-bold text-slate-800">${esc(x.test_name)}</td>
+        <td><b class="text-blue-600 text-lg font-black">${x.score}</b> <span class="text-slate-400 text-xs">/ 10</span></td>
+        <td class="whitespace-normal max-w-md text-slate-600 text-xs">${esc(x.mistakes || '—')}</td>
+        ${teacher ? `
+          <td>
+            <div class="flex items-center gap-2">
+              <button class="text-blue-600 hover:underline font-semibold" onclick='editGrade(${JSON.stringify(x)})'>Sửa</button>
+              <button class="text-red-500 hover:underline font-semibold" onclick="deleteGrade(${x.id})">Xóa</button>
+            </div>
+          </td>
+        ` : ''}
+      </tr>
+    `).join('')
+    : `<tr><td colspan="${teacher ? 5 : 4}" class="text-center text-slate-400 py-12">Chưa có điểm kiểm tra nào trong tháng này.</td></tr>`;
+}
+
+function renderFeedback() {
+  const f = data.feedback;
+  if (!f) {
+    $('feedbackText').textContent = 'Chưa có nhận xét tổng quan tháng này.';
+    $('roadmapText').textContent = 'Chưa có mục tiêu lộ trình tháng tới.';
+    return;
+  }
+  $('feedbackText').innerHTML = `
+    <div class="space-y-2">
+      <p><b>Tổng quan học tập:</b> ${esc(f.overview || '—')}</p>
+      <p><b>Môn Toán / Tư duy:</b> ${esc(f.algebra || '—')}</p>
+      <p><b>Tiếng Việt / Tiếng Anh / Môn khác:</b> ${esc(f.geometry || '—')}</p>
+    </div>
+  `;
+  $('roadmapText').innerHTML = `
+    <div class="space-y-2">
+      <p><b>Mục tiêu môn Toán:</b> ${esc(f.next_algebra || '—')}</p>
+      <p><b>Mục tiêu Tiếng Việt / Môn khác:</b> ${esc(f.next_geometry || '—')}</p>
+    </div>
+  `;
+}
+
+function badgeHw(v) {
+  let c = v <= 30 ? 'bg-red-50 text-red-700 border border-red-200' : v <= 50 ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200';
+  return `<span class="px-2.5 py-0.5 rounded-full text-xs font-bold ${c}">${v}%</span>`;
+}
+
+function badgeAtt(v) {
+  let c = v === 'Tốt' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : v === 'Lười học' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-amber-50 text-amber-700 border border-amber-200';
+  return `<span class="px-2.5 py-0.5 rounded-full text-xs font-bold ${c}">${esc(v)}</span>`;
+}
+
+// Modal Thêm / Chỉnh sửa học sinh
+function openStudent(s = null) {
+  const code = s?.connection_code || 'Sẽ được sinh tự động sau khi lưu';
+  $('modalBox').innerHTML = `
+    <form onsubmit="saveStudent(event)" class="p-6 md:p-8 space-y-4">
+      <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+        <h3 class="font-extrabold text-xl text-slate-800">${s ? 'Chỉnh sửa' : 'Thêm'} hồ sơ học sinh</h3>
+        <button type="button" onclick="closeModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">×</button>
+      </div>
+      <input type="hidden" name="id" value="${s?.id || ''}">
+      ${field('Họ và tên học sinh *', 'name', s?.name || '', true, 'text', '', '', '', 'VD: Nguyễn Minh An')}
+      ${field('Lớp học tiểu học', 'class_name', s?.class_name || '', false, 'text', '', '', '', 'VD: Lớp 1A, Lớp 3B, Lớp 5...')}
+      ${field('Số điện thoại phụ huynh', 'parent_phone', s?.parent_phone || '', false, 'text', '', '', '', '09xxxxxxxxx')}
+      ${field('Ghi chú học tập', 'note', s?.note || '', false, 'text', '', '', '', 'Đặc điểm học sinh, mục tiêu cần rèn luyện...')}
+
+      <!-- Phân biệt rõ: Mã kết nối học sinh -->
+      <div class="bg-blue-50/80 border border-blue-200 rounded-2xl p-4 text-sm mt-4">
+        <div class="flex justify-between items-center">
+          <div>
+            <span class="block text-[11px] font-bold uppercase tracking-wider text-blue-700">Mã liên kết học sinh này</span>
+            <b class="font-mono text-base text-blue-900 font-extrabold" id="studentCodeDisplay">${code}</b>
+          </div>
+          ${s?.connection_code ? `
+            <div class="flex items-center gap-2">
+              <button type="button" onclick="copyStudentCode('${s.connection_code}')" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm">Sao chép</button>
+              <button type="button" onclick="regenerateCode()" class="border border-blue-300 text-blue-600 hover:bg-blue-100/50 text-xs font-semibold px-2.5 py-1.5 rounded-lg">Tạo mã mới</button>
+            </div>
+          ` : ''}
+        </div>
+        <p class="text-xs text-slate-500 mt-2 leading-relaxed">
+          <b>Lưu ý:</b> Đây là <b>Mã liên kết học sinh</b> dùng để phụ huynh/học sinh kết nối với hồ sơ học sinh này. Mã này cũng được hiển thị trực tiếp ở ngoài giao diện cùng với Mã giáo viên.
+        </p>
+      </div>
+
+      <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
+        <button type="button" onclick="closeModal()" class="border border-slate-200 hover:bg-slate-50 rounded-xl px-5 py-2.5 font-semibold text-sm text-slate-600">Hủy</button>
+        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-6 py-2.5 font-bold text-sm shadow-md shadow-blue-500/20">Lưu thông tin</button>
+      </div>
+    </form>
+  `;
+  openModal();
+}
+
+function copyStudentCode(code) {
+  navigator.clipboard.writeText(code).then(() => {
+    const toast = document.getElementById('copyToast');
+    document.getElementById('toastMsg').innerText = `Đã sao chép mã liên kết học sinh (${code})!`;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2200);
+  });
+}
+
+function editStudent() {
+  openStudent(data.student);
+}
+
+async function saveStudent(e) {
+  e.preventDefault();
+  try {
+    await api('api/students.php?action=save', { method: 'POST', body: new FormData(e.target) });
+    closeModal();
+    await loadStudents();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+async function deleteStudent() {
+  if (!confirm('Bạn có chắc chắn muốn xóa học sinh này cùng toàn bộ dữ liệu buổi học và điểm số liên quan?')) return;
+  let f = new FormData();
+  f.append('id', selectedId);
+  try {
+    await api('api/students.php?action=delete', { method: 'POST', body: f });
+    selectedId = null;
+    await loadStudents();
+  } catch (e) {
+    alert(e.message);
+  }
+}
+
+async function regenerateCode() {
+  if (!confirm('Tạo lại mã kết nối mới cho học sinh này? Mã cũ sẽ không còn hiệu lực.')) return;
+  let f = new FormData();
+  f.append('id', selectedId);
+  try {
+    let d = await api('api/students.php?action=regenerate_code', { method: 'POST', body: f });
+    alert('Đã cập nhật mã kết nối học sinh mới: ' + d.code);
+    closeModal();
+    await loadData();
+  } catch (e) {
+    alert(e.message);
+  }
+}
+
+// Modal Thêm / Sửa Buổi Học (với danh sách môn học Tiểu học)
+function openLesson(x = null) {
+  const currentSubject = x?.subject || 'Toán';
+  $('modalBox').innerHTML = `
+    <form onsubmit="saveLesson(event)" class="p-6 md:p-8 space-y-4">
+      <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+        <h3 class="font-extrabold text-xl text-slate-800">${x ? 'Chỉnh sửa' : 'Thêm'} buổi học</h3>
+        <button type="button" onclick="closeModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">×</button>
+      </div>
+      <input type="hidden" name="id" value="${x?.id || ''}">
+      <input type="hidden" name="student_id" value="${selectedId}">
+      ${field('Ngày học *', 'lesson_date', x?.lesson_date || new Date().toISOString().slice(0, 10), true, 'date')}
+      <div class="grid grid-cols-2 gap-3">
+        ${field('Giờ bắt đầu', 'start_time', x?.start_time?.slice(0, 5) || '', false, 'time')}
+        ${field('Giờ kết thúc', 'end_time', x?.end_time?.slice(0, 5) || '', false, 'time')}
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        ${field('Số giờ học *', 'duration', x?.duration || '1.5', true, 'number', '0.5', '0')}
+        ${field('Học phí buổi này (VNĐ) *', 'price', x?.price ?? '150000', true, 'number', '1000', '0')}
+      </div>
+
+      <!-- MỤC NỘI DUNG MÔN HỌC TIỂU HỌC: Toán, Tiếng Việt, Tiếng Anh... -->
+      <div>
+        <label class="label">Nội dung môn học (Chương trình Giáo dục Tiểu học) *</label>
+        <select name="subject" class="input font-semibold text-slate-800" required>
+          ${PRIMARY_SUBJECTS.map(v => `<option value="${v}" ${currentSubject === v ? 'selected' : ''}>${v}</option>`).join('')}
+        </select>
+        <p class="text-[11px] text-slate-400 mt-1">Lựa chọn môn học thuộc chương trình tiểu học hoặc ôn luyện chuyên sâu.</p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="label">Hoàn thành BTVN</label>
+          <select name="homework_percent" class="input">
+            ${[0, 30, 50, 70, 80, 90, 100].map(v => `<option value="${v}" ${+x?.homework_percent === v ? 'selected' : ''}>${v}%</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <label class="label">Ý thức học tập</label>
+          <select name="attitude" class="input">
+            ${['Tốt', 'Mất tập trung', 'Lười học', 'Nói chuyện riêng'].map(v => `<option ${x?.attitude === v ? 'selected' : ''}>${v}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      ${field('Nhận xét buổi học', 'comment', x?.comment || '', false, 'text', '', '', '', 'Tiếp thu bài, làm bài tập, thái độ học...')}
+      <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
+        <button type="button" onclick="closeModal()" class="border border-slate-200 hover:bg-slate-50 rounded-xl px-5 py-2.5 font-semibold text-sm text-slate-600">Hủy</button>
+        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-6 py-2.5 font-bold text-sm shadow-md shadow-blue-500/20">Lưu buổi học</button>
+      </div>
+    </form>
+  `;
+  openModal();
+}
+
+function editLesson(x) { openLesson(x); }
+async function saveLesson(e) {
+  e.preventDefault();
+  try {
+    await api('api/lessons.php?action=save', { method: 'POST', body: new FormData(e.target) });
+    closeModal();
+    await loadData();
+    await loadStudents();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+async function deleteLesson(id) {
+  if (!confirm('Bạn có chắc muốn xóa buổi học này?')) return;
+  let f = new FormData();
+  f.append('id', id);
+  try {
+    await api('api/lessons.php?action=delete', { method: 'POST', body: f });
+    await loadData();
+    await loadStudents();
+  } catch (e) {
+    alert(e.message);
+  }
+}
+
+function openGrade(x = null) {
+  $('modalBox').innerHTML = `
+    <form onsubmit="saveGrade(event)" class="p-6 md:p-8 space-y-4">
+      <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+        <h3 class="font-extrabold text-xl text-slate-800">${x ? 'Chỉnh sửa' : 'Thêm'} bài kiểm tra</h3>
+        <button type="button" onclick="closeModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">×</button>
+      </div>
+      <input type="hidden" name="id" value="${x?.id || ''}">
+      <input type="hidden" name="student_id" value="${selectedId}">
+      ${field('Ngày kiểm tra *', 'test_date', x?.test_date || new Date().toISOString().slice(0, 10), true, 'date')}
+      ${field('Tên bài kiểm tra *', 'test_name', x?.test_name || '', true, 'text', '', '', '', 'VD: Kiểm tra Toán 15p, Chính tả Tiếng Việt...')}
+      ${field('Điểm số (Thang điểm 10) *', 'score', x?.score ?? '', true, 'number', '0.1', '0', '10')}
+      ${field('Lỗi sai & Điểm cần cải thiện', 'mistakes', x?.mistakes || '', false, 'text', '', '', '', 'Sai phép tính cộng trừ, viết sai chính tả...')}
+      <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
+        <button type="button" onclick="closeModal()" class="border border-slate-200 hover:bg-slate-50 rounded-xl px-5 py-2.5 font-semibold text-sm text-slate-600">Hủy</button>
+        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-6 py-2.5 font-bold text-sm shadow-md shadow-blue-500/20">Lưu kết quả</button>
+      </div>
+    </form>
+  `;
+  openModal();
+}
+
+function editGrade(x) { openGrade(x); }
+async function saveGrade(e) {
+  e.preventDefault();
+  try {
+    await api('api/grades.php?action=save', { method: 'POST', body: new FormData(e.target) });
+    closeModal();
+    await loadData();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+async function deleteGrade(id) {
+  if (!confirm('Bạn có chắc muốn xóa bài kiểm tra này?')) return;
+  let f = new FormData();
+  f.append('id', id);
+  try {
+    await api('api/grades.php?action=delete', { method: 'POST', body: f });
+    await loadData();
+  } catch (e) {
+    alert(e.message);
+  }
+}
+
+function openPayment() {
+  let p = data?.payment || {};
+  $('modalBox').innerHTML = `
+    <form onsubmit="savePayment(event)" enctype="multipart/form-data" class="p-6 md:p-8 space-y-4">
+      <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+        <h3 class="font-extrabold text-xl text-slate-800">Cài đặt thông tin thanh toán</h3>
+        <button type="button" onclick="closeModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">×</button>
+      </div>
+      ${field('Tên Ngân hàng', 'bank_name', p.bank_name || '', false, 'text', '', '', '', 'VD: Vietcombank, MBBank...')}
+      ${field('Số tài khoản', 'account_number', p.account_number || '', false, 'text', '', '', '', '0123456789')}
+      ${field('Tên chủ tài khoản', 'account_owner', p.account_owner || '', false, 'text', '', '', '', 'NGUYEN VAN A')}
+      <div>
+        <label class="label">Hình ảnh Mã QR chuyển khoản</label>
+        <input type="file" name="qr_image" accept="image/*" class="input">
+      </div>
+      ${p.qr_image ? `<div class="mt-2"><span class="text-xs text-slate-400 block mb-1">Mã QR hiện tại:</span><img src="${p.qr_image}" class="w-36 h-36 object-contain rounded-xl border border-slate-200 p-1"></div>` : ''}
+      <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
+        <button type="button" onclick="closeModal()" class="border border-slate-200 hover:bg-slate-50 rounded-xl px-5 py-2.5 font-semibold text-sm text-slate-600">Hủy</button>
+        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-6 py-2.5 font-bold text-sm shadow-md shadow-blue-500/20">Lưu cài đặt</button>
+      </div>
+    </form>
+  `;
+  openModal();
+}
+
+async function savePayment(e) {
+  e.preventDefault();
+  try {
+    await api('api/payment.php', { method: 'POST', body: new FormData(e.target) });
+    closeModal();
+    await loadData();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+function openFeedback() {
+  let f = data.feedback || {};
+  $('modalBox').innerHTML = `
+    <form onsubmit="saveFeedback(event)" class="p-6 md:p-8 space-y-4">
+      <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+        <h3 class="font-extrabold text-xl text-slate-800">Nhận xét & Lộ trình học tập tiểu học</h3>
+        <button type="button" onclick="closeModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">×</button>
+      </div>
+      <input type="hidden" name="student_id" value="${selectedId}">
+      <input type="hidden" name="month_key" value="${$('month').value}">
+      ${field('Nhận xét tổng quan', 'overview', f.overview || '', false, 'text', '', '', '', 'Ý thức, chuyên cần, tiến bộ chung')}
+      ${field('Nhận xét môn Toán / Tư duy', 'algebra', f.algebra || '', false, 'text', '', '', '', 'Khả năng tính toán, giải toán có lời văn...')}
+      ${field('Nhận xét Tiếng Việt / Tiếng Anh / Môn khác', 'geometry', f.geometry || '', false, 'text', '', '', '', 'Chính tả, đọc hiểu, từ vựng...')}
+      ${field('Mục tiêu môn Toán tháng tới', 'next_algebra', f.next_algebra || '', false, 'text', '', '', '', 'Cải thiện tốc độ tính, bảng cửu chương...')}
+      ${field('Mục tiêu Tiếng Việt / Môn khác tháng tới', 'next_geometry', f.next_geometry || '', false, 'text', '', '', '', 'Luyện chữ, ngữ pháp...')}
+      <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
+        <button type="button" onclick="closeModal()" class="border border-slate-200 hover:bg-slate-50 rounded-xl px-5 py-2.5 font-semibold text-sm text-slate-600">Hủy</button>
+        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-6 py-2.5 font-bold text-sm shadow-md shadow-blue-500/20">Lưu nhận xét</button>
+      </div>
+    </form>
+  `;
+  openModal();
+}
+
+async function saveFeedback(e) {
+  e.preventDefault();
+  try {
+    await api('api/feedback.php', { method: 'POST', body: new FormData(e.target) });
+    closeModal();
+    await loadData();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+function openLink() {
+  $('modalBox').innerHTML = `
+    <form onsubmit="linkStudent(event)" class="p-6 md:p-8 space-y-4">
+      <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+        <h3 class="font-extrabold text-xl text-slate-800">Liên kết hồ sơ học sinh</h3>
+        <button type="button" onclick="closeModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">×</button>
+      </div>
+      <p class="text-sm text-slate-500 leading-relaxed">
+        Nhập <b>Mã liên kết học sinh</b> do giáo viên cung cấp để liên kết tài khoản của bạn với hồ sơ học sinh.
+      </p>
+      ${field('Mã liên kết học sinh *', 'connection_code', '', true, 'text', '', '', '', 'VD: 8A9B2C1D')}
+      <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
+        <button type="button" onclick="closeModal()" class="border border-slate-200 hover:bg-slate-50 rounded-xl px-5 py-2.5 font-semibold text-sm text-slate-600">Hủy</button>
+        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-6 py-2.5 font-bold text-sm shadow-md shadow-blue-500/20">Liên kết ngay</button>
+      </div>
+    </form>
+  `;
+  openModal();
+}
+
+async function linkStudent(e) {
+  e.preventDefault();
+  try {
+    await api('api/link.php', { method: 'POST', body: new FormData(e.target) });
+    closeModal();
+    await loadStudents();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+
+// ==========================================================
+// XUẤT CÁC BÁO CÁO THÀNH HÌNH ẢNH PNG
+// ==========================================================
+
+function safeFileName(text) {
+  return String(text || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .replace(/[^a-zA-Z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+async function exportReportImage(elementId, reportName) {
+
+  if (typeof html2canvas === 'undefined') {
+    alert('Thư viện xuất hình ảnh chưa được tải. Vui lòng tải lại trang.');
+    return;
+  }
+
+  const element = $(elementId);
+
+  if (!element) {
+    alert('Không tìm thấy nội dung cần xuất.');
+    return;
+  }
+
+  const studentName =
+    $('sname')?.textContent?.trim() || 'Hoc-Sinh';
+
+  const month =
+    $('month')?.value || new Date().toISOString().slice(0, 7);
+
+  const safeStudent =
+    safeFileName(studentName) || 'Hoc-Sinh';
+
+  const fileName =
+    `${reportName}-${safeStudent}-${month}.png`;
+
+  // Lưu trạng thái giao diện hiện tại
+  const oldOverflow = element.style.overflow;
+  const oldWidth = element.style.width;
+  const oldMaxWidth = element.style.maxWidth;
+
+  // Tạm thời mở các vùng bảng bị overflow-x-auto
+  const scrollElements =
+    element.querySelectorAll('.overflow-x-auto');
+
+  const oldScrollStyles = [];
+
+  scrollElements.forEach(el => {
+
+    oldScrollStyles.push({
+      element: el,
+      overflowX: el.style.overflowX,
+      overflow: el.style.overflow
+    });
+
+    el.style.overflowX = 'visible';
+    el.style.overflow = 'visible';
+  });
+
+  // Không đưa nút "Xuất hình ảnh" vào file ảnh
+  const exportButtons =
+    element.querySelectorAll('.export-image-btn');
+
+  exportButtons.forEach(btn => {
+    btn.style.visibility = 'hidden';
+  });
+
+  try {
+
+    // Cho phép html2canvas lấy toàn bộ nội dung
+    element.style.overflow = 'visible';
+    element.style.width = '100%';
+    element.style.maxWidth = 'none';
+
+    const canvas = await html2canvas(element, {
+      scale: 2,
+      backgroundColor: '#ffffff',
+      useCORS: true,
+      allowTaint: false,
+      logging: false,
+      imageTimeout: 15000
+    });
+
+    canvas.toBlob(function(blob) {
+
+      if (!blob) {
+        alert('Không thể tạo file hình ảnh.');
+        return;
+      }
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+
+      link.href = url;
+      link.download = fileName;
+
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+      }, 1000);
+
+    }, 'image/png');
+
+  } catch (error) {
+
+    console.error('Export image error:', error);
+
+    alert(
+      'Không thể xuất hình ảnh. Vui lòng thử lại.'
+    );
+
+  } finally {
+
+    // Khôi phục giao diện ban đầu
+    element.style.overflow = oldOverflow;
+    element.style.width = oldWidth;
+    element.style.maxWidth = oldMaxWidth;
+
+    oldScrollStyles.forEach(item => {
+      item.element.style.overflowX = item.overflowX;
+      item.element.style.overflow = item.overflow;
+    });
+
+    exportButtons.forEach(btn => {
+      btn.style.visibility = '';
+    });
+  }
+}
+
+
+// Phiếu học phí & báo cáo
+function exportOverviewImage() {
+  exportReportImage(
+    'overview',
+    'Phieu-hoc-phi-bao-cao'
+  );
+}
+
+
+// Nhật ký buổi học
+function exportLessonsImage() {
+  exportReportImage(
+    'lessons',
+    'Nhat-ky-buoi-hoc'
+  );
+}
+
+
+// Bảng điểm chi tiết
+function exportGradesImage() {
+  exportReportImage(
+    'grades',
+    'Bang-diem-chi-tiet'
+  );
+}
+
+function showTab(id) {
+  document.querySelectorAll('.page').forEach(x => x.classList.add('hidden'));
+  $(id).classList.remove('hidden');
+  document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+  const word = id === 'overview' ? 'phiếu' : id === 'lessons' ? 'nhật ký' : 'bảng điểm';
+  document.querySelectorAll('.tab').forEach(x => {
+    if (x.textContent.toLowerCase().includes(word)) x.classList.add('active');
+  });
+}
+
+function openModal() {
+  $('modal').classList.remove('hidden');
+  $('modal').classList.add('flex');
+}
+
+function closeModal() {
+  $('modal').classList.add('hidden');
+  $('modal').classList.remove('flex');
+}
+
+function toggleSide() {
+  $('side').classList.toggle('open');
+  $('overlay').classList.toggle('hidden');
+}
+
+function money(n) {
+  return new Intl.NumberFormat('vi-VN').format(Number(n) || 0) + ' đ';
+}
+
+function fmtDate(d) {
+  return new Date(d + 'T00:00:00').toLocaleDateString('vi-VN');
+}
+
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function field(label, name, value = '', required = false, type = 'text', step = '', min = '', max = '', placeholder = '') {
+  let attr = `type="${type}" name="${name}" ${required ? 'required' : ''}`;
+  if (step) attr += ` step="${step}"`;
+  if (min !== '') attr += ` min="${min}"`;
+  if (max !== '') attr += ` max="${max}"`;
+  if (placeholder) attr += ` placeholder="${esc(placeholder)}"`;
+
+  if (type === 'file') {
+    return `<label class="label">${label}<input ${attr} class="input"></label>`;
+  }
+  return `<label class="label">${label}<input ${attr} value="${esc(value)}" class="input"></label>`;
+}
+
+loadStudents();

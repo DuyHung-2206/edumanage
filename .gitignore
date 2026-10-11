@@ -1,0 +1,29 @@
+# Word documents (Yêu cầu không đẩy file word lên GitHub)
+*.doc
+*.docx
+~$*.doc
+~$*.docx
+
+# Python virtual environment & cache
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# Scripts sinh báo cáo Word cục bộ
+build_report.py
+generate_report_doc.py
+report_content_data.py
+
+# File backup & temporary files
+*.backup*
+*.before-fix*
+*.error*
+session_test.php
+
+# OS & Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
