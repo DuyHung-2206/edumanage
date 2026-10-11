@@ -69,10 +69,11 @@ define(
 // GROQ AI
 // ======================================================
 
-// DÁN API KEY GROQ CỦA BẠN VÀO ĐÂY (hoặc cấu hình qua biến môi trường GROQ_API_KEY)
+// DÁN API KEY GROQ CỦA BẠN VÀO ĐÂY (hoặc cấu hình qua constants.local.php / biến môi trường GROQ_API_KEY)
+$localConfig = file_exists(__DIR__ . '/constants.local.php') ? include(__DIR__ . '/constants.local.php') : [];
 define(
     'GROQ_API_KEY',
-    getenv('GROQ_API_KEY') ?: 'YOUR_GROQ_API_KEY_HERE'
+    $localConfig['GROQ_API_KEY'] ?? (getenv('GROQ_API_KEY') ?: 'YOUR_GROQ_API_KEY_HERE')
 );
 
 // Groq OpenAI-compatible Chat Completions API

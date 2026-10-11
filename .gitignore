@@ -10,6 +10,8 @@ __pycache__/
 *$py.class
 venv/
 .env
+*.local.php
+constants.local.php
 
 # Scripts sinh báo cáo Word cục bộ
 build_report.py
