@@ -39,30 +39,12 @@ define(
 // DATABASE (ĐỒNG BỘ VỚI EDUMANAGE)
 // ======================================================
 
-define(
-    'DB_HOST',
-    'localhost'
-);
-
-define(
-    'DB_NAME',
-    'edumanage'
-);
-
-define(
-    'DB_USER',
-    'root'
-);
-
-define(
-    'DB_PASS',
-    ''
-);
-
-define(
-    'DB_CHARSET',
-    'utf8mb4'
-);
+define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
+define('DB_PORT', getenv('DB_PORT') ?: '3306');
+define('DB_NAME', getenv('DB_NAME') ?: 'edumanage');
+define('DB_USER', getenv('DB_USER') ?: 'root');
+define('DB_PASS', getenv('DB_PASS') !== false ? getenv('DB_PASS') : '');
+define('DB_CHARSET', 'utf8mb4');
 
 
 // ======================================================
