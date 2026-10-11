@@ -12,10 +12,27 @@ if (session_status() === PHP_SESSION_NONE) {
 require_once __DIR__ . '/../config/constants.php';
 
 // Lấy chuỗi URL điều hướng
-$url = $_GET['url'] ?? 'quiz/index';
+$rawUrl = $_GET['url'] ?? '';
+if (empty($rawUrl)) {
+    $uri = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH);
+    $uri = preg_replace('#^/edumanage#i', '', $uri);
+    $uri = preg_replace('#^/soan_giao_an(/public)?#i', '', $uri);
+    $rawUrl = trim($uri, '/');
+}
+$url = !empty($rawUrl) ? $rawUrl : 'quiz/index';
 $url = rtrim($url, '/');
 $url = filter_var($url, FILTER_SANITIZE_URL);
 $parts = explode('/', $url);
+
+// Nếu truy cập login.php hoặc register.php, điều hướng thẳng về EduManage login
+if (str_starts_with($url, 'login') || str_starts_with($url, 'auth/login')) {
+    header('Location: ' . EDUMANAGE_URL . '/login.php');
+    exit;
+}
+if (str_starts_with($url, 'register') || str_starts_with($url, 'auth/register')) {
+    header('Location: ' . EDUMANAGE_URL . '/login.php');
+    exit;
+}
 
 // Xác định Controller, Action và Parameter
 $controllerName = ucfirst($parts[0] ?? 'Quiz') . 'Controller';
